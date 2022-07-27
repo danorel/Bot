@@ -1,72 +1,100 @@
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 
 public class BotClean {
-    private static int[] findClosestDirt(char[][] board, boolean[][] cache, int i, int j) {
+    private static void findDirtPoints(ArrayList<int[]> dirtPoints, char[][] board, boolean[][] cache, int i, int j) {
         if (i < 0 || i >= 5 || j < 0 || j >= 5) {
-            return new int[0];
+            return;
         }
         if (cache[i][j]) {
-            return new int[0];
+            return;
         }
         if (board[i][j] == 'd') {
-            return new int[] { i, j };
+            dirtPoints.add(new int[] { i, j });
         }
 
         cache[i][j] = true;
 
-        int[] up = findClosestDirt(board, cache, i - 1, j);
-        if (up.length > 0) {
-            return up;
-        }
-
-        int[] down = findClosestDirt(board, cache, i + 1, j);
-        if (down.length > 0) {
-            return down;
-        }
-
-        int[] left = findClosestDirt(board, cache, i, j - 1);
-        if (left.length > 0) {
-            return left;
-        }
-
-        int[] right = findClosestDirt(board, cache, i, j + 1);
-        if (right.length > 0) {
-            return right;
-        }
-
-        return new int[0];
+        findDirtPoints(dirtPoints, board, cache, i - 1, j);
+        findDirtPoints(dirtPoints, board, cache, i + 1, j);
+        findDirtPoints(dirtPoints, board, cache, i, j - 1);
+        findDirtPoints(dirtPoints, board, cache, i, j + 1);
     }
 
-    private static void nextMove(char[][] board, int posr, int posc) {
+    private static int[] findClosestDirtPoint(ArrayList<int[]> dirtPoints, char[][] board, boolean[][] cache, int i, int j) {
+        int[] closestDirtPoint = new int[] { i, j, -1 };
+
+        int minDirtScore = Integer.MAX_VALUE;
+
+        for (int next = 0; next < dirtPoints.size(); ++next) {
+            int[] dirtPoint = dirtPoints.get(next);
+            int dirtScore = findScore(i, j, dirtPoint[0], dirtPoint[1]);
+            if (dirtScore < minDirtScore) {
+                minDirtScore = dirtScore;
+                closestDirtPoint[0] = dirtPoint[0];
+                closestDirtPoint[1] = dirtPoint[1];
+                closestDirtPoint[2] = next;
+            }
+        }
+
+        return closestDirtPoint;
+    }
+
+    private static int findScore(int fromX, int fromY, int toX, int toY) {
+        return Math.abs(fromX - toX) + Math.abs(fromY - toY);
+    }
+
+    private static void play(char[][] board, int posr, int posc) {
         boolean[][] cache = new boolean[5][5];
         Arrays.stream(cache).forEach(row -> Arrays.fill(row, false));
 
-        int[] dirt = findClosestDirt(board, cache, posr, posc);
-        System.out.println(Arrays.toString(dirt));
-        System.out.println(posr + ", " + posc);
+        ArrayList<int[]> dirtPoints = new ArrayList<>();
+        findDirtPoints(dirtPoints, board, cache, posr, posc);
 
-        int dy = dirt[0] - posr;
-        int dx = dirt[1] - posc;
+        for (int[] dirtPoint : dirtPoints) {
+            System.out.println(Arrays.toString(dirtPoint));
+        }
 
-        while (dy > 0) {
-            System.out.printf("DOWN%n");
-            --dy;
-        }
-        while (dy < 0) {
-            System.out.printf("UP%n");
-            ++dy;
-        }
-        while (dx > 0) {
-            System.out.printf("RIGHT%n");
-            --dx;
-        }
-        while (dx < 0) {
-            System.out.printf("LEFT%n");
-            ++dx;
-        }
-        if (dx == 0 && dy == 0) {
-            System.out.printf("CLEAN%n");
+        int x = posr;
+        int y = posc;
+
+        while (dirtPoints.size() != 0) {
+            int[] dirt = findClosestDirtPoint(dirtPoints, board, cache, x, y);
+
+            if (dirt[2] == -1) {
+                break;
+            }
+
+            int dx = dirt[0] - x;
+            int dy = dirt[1] - y;
+
+            System.out.println("bot: " + x + ", " + y);
+            System.out.println("dirt: " + dirt[0] + ", " + dirt[1]);
+            System.out.println("diff: " + dx + ", " + dy);
+
+            if (dy < 0) {
+                System.out.printf("DOWN%n");
+                --y;
+            } else if (dy > 0) {
+                System.out.printf("UP%n");
+                ++y;
+            } else if (dx < 0) {
+                System.out.printf("RIGHT%n");
+                --x;
+            } else if (dx > 0) {
+                System.out.printf("LEFT%n");
+                ++x;
+            } else {
+                System.out.printf("CLEAN%n");
+                dirtPoints.remove(dirt[2]);
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -92,7 +120,7 @@ public class BotClean {
          */
         String test2 = "4 0 -d--- -d--- ---d- ---d- b-d-d";
 
-        Scanner scanner = new Scanner(test1);
+        Scanner scanner = new Scanner(test2);
 
         int posr = scanner.nextInt();
         int posc = scanner.nextInt();
@@ -108,6 +136,6 @@ public class BotClean {
             ++i;
         }
 
-        nextMove(board, posr, posc);
+        play(board, posr, posc);
     }
 }
