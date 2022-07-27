@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class StaticBotSavesPrincess {
+public class DeterministicBotSavesPrincess {
 
     private static int[] findPrincess(int N, char[][] grid) {
         if (grid[0][0] == 'p') {
@@ -39,8 +39,8 @@ public class StaticBotSavesPrincess {
     }
 
     private static void displayPathtoPrincess(int N, char[][] grid) {
-        int[] princess = StaticBotSavesPrincess.findPrincess(N, grid);
-        int[] bot = StaticBotSavesPrincess.findBot(N, grid);
+        int[] princess = DeterministicBotSavesPrincess.findPrincess(N, grid);
+        int[] bot = DeterministicBotSavesPrincess.findBot(N, grid);
 
         int dy = princess[0] - bot[0];
         int dx = princess[1] - bot[1];

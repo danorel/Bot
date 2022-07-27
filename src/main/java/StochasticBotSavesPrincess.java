@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class DynamicBotSavesPrincess {
+public class StochasticBotSavesPrincess {
 
     private static int[] findPrincess(int N, char[][] grid, boolean[][] cache, int i, int j) {
         if ((i < 0 || i >= N) || (j < 0 || j >= N)) {
@@ -44,7 +44,7 @@ public class DynamicBotSavesPrincess {
         boolean[][] cache = new boolean[N][N];
         Arrays.stream(cache).forEach(cell -> Arrays.fill(cell, false));
 
-        int[] princess = DynamicBotSavesPrincess.findPrincess(N, grid, cache, center, center);
+        int[] princess = StochasticBotSavesPrincess.findPrincess(N, grid, cache, center, center);
 
         int dy = princess[0] - bot[0];
         int dx = princess[1] - bot[1];

@@ -2,7 +2,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 
-public class BotClean {
+public class DeterministicBotClean {
+
     private static void findDirtPoints(ArrayList<int[]> dirtPoints, char[][] board, boolean[][] cache, int i, int j) {
         if (i < 0 || i >= 5 || j < 0 || j >= 5) {
             return;
