@@ -14,9 +14,7 @@ public class DeterministicBotClean {
         if (board[i][j] == 'd') {
             dirtPoints.add(new int[] { i, j });
         }
-
         cache[i][j] = true;
-
         findDirtPoints(dirtPoints, board, cache, i - 1, j);
         findDirtPoints(dirtPoints, board, cache, i + 1, j);
         findDirtPoints(dirtPoints, board, cache, i, j - 1);
