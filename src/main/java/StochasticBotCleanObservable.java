@@ -3,13 +3,14 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 public class StochasticBotCleanObservable {
-
     private static final int N = 5;
 
-    private static final boolean[][] visited = new boolean[N][N];
+    private static boolean isValidMove(int posr, int posc) {
+        return posr >= 0 && posr < N && posc >= 0 && posc < N;
+    }
 
     private static boolean isTargetPoint(char[][] board, int posr, int posc, char target) {
-        if (posr < 0 || posr >= N || posc < 0 || posc >= N) {
+        if (!isValidMove(posr, posc)) {
             return false;
         }
         return board[posr][posc] == target;
@@ -53,7 +54,7 @@ public class StochasticBotCleanObservable {
         int minTargetScore = Integer.MAX_VALUE;
 
         for (int[] targetPoint : targetPoints) {
-            int targetScore = findScore(posr, posc, targetPoint[0], targetPoint[1]);
+            int targetScore = costFunction(posr, posc, targetPoint[0], targetPoint[1]);
             if (targetScore < minTargetScore) {
                 minTargetScore = targetScore;
                 closestTargetPoint[0] = targetPoint[0];
@@ -64,11 +65,11 @@ public class StochasticBotCleanObservable {
         return closestTargetPoint;
     }
 
-    private static int findScore(int fromX, int fromY, int toX, int toY) {
+    private static int costFunction(int fromX, int fromY, int toX, int toY) {
         return Math.abs(fromX - toX) + Math.abs(fromY - toY);
     }
 
-    private static void nextMove(char[][] board, int posr, int posc) {
+    private static int[] actions(char[][] board, int posr, int posc) {
         ArrayList<int[]> dirtPoints = findDirtPoints(board, posr, posc);
 
         int dx, dy;
@@ -92,17 +93,27 @@ public class StochasticBotCleanObservable {
             dy = closestDirtPoint[1] - posc;
         }
 
+        return new int[]{ dx, dy };
+    }
+
+    private static String transitionModel(int dx, int dy) {
         if (dx < 0) {
-            System.out.println("UP");
+            return "UP";
         } else if (dx > 0) {
-            System.out.println("DOWN");
+            return "DOWN";
         } else if (dy < 0) {
-            System.out.println("LEFT");
+            return "LEFT";
         } else if (dy > 0) {
-            System.out.println("RIGHT");
+            return "RIGHT";
         } else {
-            System.out.println("CLEAN");
+            return "CLEAN";
         }
+    }
+
+    private static void nextMove(char[][] board, int posr, int posc) {
+        int[] action = actions(board, posr, posc);
+        String transition = transitionModel(action[0], action[1]);
+        System.out.println(transition);
     }
 
     public static void main(String[] args) {
@@ -153,8 +164,6 @@ public class StochasticBotCleanObservable {
             }
             ++i;
         }
-
-        Arrays.stream(visited).forEach(row -> Arrays.fill(row, false));
 
         nextMove(board, posr, posc);
     }
