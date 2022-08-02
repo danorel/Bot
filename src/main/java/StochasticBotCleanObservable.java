@@ -1,119 +1,127 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Scanner;
+import java.util.*;
 
 public class StochasticBotCleanObservable {
-    private static final int N = 5;
 
-    private static boolean isValidMove(int posr, int posc) {
-        return posr >= 0 && posr < N && posc >= 0 && posc < N;
+    public static int N = 5;
+
+    private enum Action {
+        Left("LEFT"),
+        Right("RIGHT"),
+        Up("UP"),
+        Down("DOWN");
+
+        private String name;
+
+        Action(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return this.name;
+        }
     }
 
-    private static boolean isTargetPoint(char[][] board, int posr, int posc, char target) {
-        if (!isValidMove(posr, posc)) {
-            return false;
+    private static class Node {
+        public int[] state;
+        public int cost;
+        public Node parent;
+        public Action action;
+
+        public Node(int[] state) {
+            this(state, 0, null, null);
         }
-        return board[posr][posc] == target;
+
+        public Node(int[] state, int cost, Node parent, Action action) {
+            this.state = state;
+            this.cost = cost;
+            this.parent = parent;
+            this.action = action;
+        }
+
+        public String getState() {
+            return Arrays.toString(this.state);
+        }
+
+        @Override
+        public String toString() {
+            return "Node{" +
+                    "state=" + Arrays.toString(state) +
+                    ", cost=" + cost +
+                    ", parent=" + parent +
+                    ", action=" + action +
+                    '}';
+        }
     }
 
-    private static void findInvisiblePoints(ArrayList<int[]> invisiblePoints, char[][] board, boolean[][] cache, int posr, int posc) {
-        if (posr < 0 || posr >= N || posc < 0 || posc >= N) {
-            return;
+    private static class Board {
+        public char[][] squares;
+
+        public Board(char[][] squares) {
+            this.squares = squares;
         }
-        if (cache[posr][posc]) {
-            return;
-        }
-        cache[posr][posc] = true;
-        if (isTargetPoint(board, posr, posc, 'o')) {
-            invisiblePoints.add(new int[] { posr, posc });
-            return;
-        }
-        findInvisiblePoints(invisiblePoints, board, cache, posr - 1, posc);
-        findInvisiblePoints(invisiblePoints, board, cache, posr + 1, posc);
-        findInvisiblePoints(invisiblePoints, board, cache, posr, posc - 1);
-        findInvisiblePoints(invisiblePoints, board, cache, posr, posc + 1);
     }
 
-    private static ArrayList<int[]> findDirtPoints(char[][] board, int posr, int posc) {
-        ArrayList<int[]> targetPoints = new ArrayList<>();
+    private static boolean isGoal(Node currentNode, Board board) {
+        return board.squares[currentNode.state[0]][currentNode.state[1]] == 'd';
+    }
 
-        for (int i = -1; i <= 1; ++i) {
-            for (int j = -1; j <= 1; ++j) {
-                if (isTargetPoint(board, posr + i, posc + j, 'd')) {
-                    targetPoints.add(new int[] { posr + i, posc + j });
-                };
+    private static Node transitionModel(Board board, Node currentNode, Action action) {
+        switch (action) {
+            case Up: {
+                if (currentNode.state[0] < 1) {
+                    return null;
+                }
+                return new Node(new int[]{currentNode.state[0] - 1, currentNode.state[1]}, currentNode.cost + 1, currentNode, action);
+            }
+            case Down: {
+                if (currentNode.state[0] >= N - 2) {
+                    return null;
+                }
+                return new Node(new int[]{ currentNode.state[0] + 1, currentNode.state[1] }, currentNode.cost + 1, currentNode, action);
+            }
+            case Left: {
+                if (currentNode.state[1] < 1) {
+                    return null;
+                }
+                return new Node(new int[]{currentNode.state[0], currentNode.state[1] - 1}, currentNode.cost + 1, currentNode, action);
+            }
+            case Right: {
+                if (currentNode.state[1] >= N - 2) {
+                    return null;
+                }
+                return new Node(new int[]{ currentNode.state[0], currentNode.state[1] + 1 }, currentNode.cost + 1, currentNode, action);
+            }
+            default: {
+                return new Node(new int[]{ currentNode.state[0], currentNode.state[1] }, currentNode.cost, currentNode, action);
+            }
+        }
+    }
+
+    private static Node bestFirstSearch(Board board, Node initialNode) {
+        PriorityQueue<Node> queue = new PriorityQueue<>((o1, o2) -> o1.cost - o2.cost);
+        queue.add(initialNode);
+
+        HashSet<String> visited = new HashSet<>();
+
+        while (!queue.isEmpty()) {
+            Node currentNode = queue.poll();
+            if (isGoal(currentNode, board)) {
+                return currentNode;
+            }
+            for (Action action : Action.values()) {
+                Node nextNode = transitionModel(board, currentNode, action);
+                if (nextNode != null) {
+                    String nextState = nextNode.getState();
+                    if (!visited.contains(nextState)) {
+                        queue.add(nextNode);
+                        visited.add(nextState);
+                    }
+                }
             }
         }
 
-        return targetPoints;
-    }
-
-    private static int[] findClosestTargetPoint(ArrayList<int[]> targetPoints, int posr, int posc) {
-        int[] closestTargetPoint = new int[] { posr, posc };
-
-        int minTargetScore = Integer.MAX_VALUE;
-
-        for (int[] targetPoint : targetPoints) {
-            int targetScore = costFunction(posr, posc, targetPoint[0], targetPoint[1]);
-            if (targetScore < minTargetScore) {
-                minTargetScore = targetScore;
-                closestTargetPoint[0] = targetPoint[0];
-                closestTargetPoint[1] = targetPoint[1];
-            }
-        }
-
-        return closestTargetPoint;
-    }
-
-    private static int costFunction(int fromX, int fromY, int toX, int toY) {
-        return Math.abs(fromX - toX) + Math.abs(fromY - toY);
-    }
-
-    private static int[] actions(char[][] board, int posr, int posc) {
-        ArrayList<int[]> dirtPoints = findDirtPoints(board, posr, posc);
-
-        int dx, dy;
-
-        if (dirtPoints.size() == 0) {
-            ArrayList<int[]> invisiblePoints = new ArrayList<>();
-
-            boolean[][] cache = new boolean[N][N];
-            Arrays.stream(cache).forEach(row -> Arrays.fill(row, false));
-
-            findInvisiblePoints(invisiblePoints, board, cache, posr, posc);
-
-            int[] closestInvisiblePoint = findClosestTargetPoint(invisiblePoints, posr, posc);
-
-            dx = closestInvisiblePoint[0] - posr;
-            dy = closestInvisiblePoint[1] - posc;
-        } else {
-            int[] closestDirtPoint = findClosestTargetPoint(dirtPoints, posr, posc);
-
-            dx = closestDirtPoint[0] - posr;
-            dy = closestDirtPoint[1] - posc;
-        }
-
-        return new int[]{ dx, dy };
-    }
-
-    private static String transitionModel(int dx, int dy) {
-        if (dx < 0) {
-            return "UP";
-        } else if (dx > 0) {
-            return "DOWN";
-        } else if (dy < 0) {
-            return "LEFT";
-        } else if (dy > 0) {
-            return "RIGHT";
-        } else {
-            return "CLEAN";
-        }
-    }
-
-    private static void nextMove(char[][] board, int posr, int posc) {
-        int[] action = actions(board, posr, posc);
-        String transition = transitionModel(action[0], action[1]);
-        System.out.println(transition);
+        return null;
     }
 
     public static void main(String[] args) {
@@ -153,18 +161,31 @@ public class StochasticBotCleanObservable {
         int posr = scanner.nextInt();
         int posc = scanner.nextInt();
 
-        char[][] board = new char[N][N];
+        char[][] squares = new char[N][N];
 
         int i = 0;
         while (scanner.hasNext()) {
             String row = scanner.next();
             for (int j = 0; j < N; ++j) {
                 char cell = row.charAt(j);
-                board[i][j] = cell;
+                squares[i][j] = cell;
             }
             ++i;
         }
 
-        nextMove(board, posr, posc);
+        Board board = new Board(squares);
+        Node initialNode = new Node(new int[]{ posr, posc });
+        Node nextNode = bestFirstSearch(board, initialNode);
+
+        if (nextNode != null) {
+            if (nextNode == initialNode) {
+                System.out.println("CLEAN");
+            } else {
+                while (nextNode.parent != initialNode) {
+                    nextNode = nextNode.parent;
+                }
+                System.out.println(nextNode.action);
+            }
+        }
     }
 }
